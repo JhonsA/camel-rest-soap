@@ -1,5 +1,6 @@
-META-INF/spring-configuration-metadata.json
-cl/ds/camel/commons/ToolBox.class
-cl/ds/camel/domain/GetPalabraNumeroResponse.class
-cl/ds/camel/Application.class
-cl/ds/camel/domain/GetPalabraNumeroRequest.class
+cl\ds\camel\commons\ToolBox.class
+cl\ds\camel\domain\GetCountryResponse.class
+cl\ds\camel\domain\GetChuckNorrisJokeResponse.class
+cl\ds\camel\Application.class
+cl\ds\camel\domain\GetCountryRequest.class
+META-INF\spring-configuration-metadata.json

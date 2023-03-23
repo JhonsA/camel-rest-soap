@@ -1,23 +1,22 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
-       http://www.springframework.org/schema/beans
-       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
-       http://camel.apache.org/schema/spring
-       http://camel.apache.org/schema/spring/camel-spring.xsd">
+<beans xmlns="http://www.springframework.org/schema/beans" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+    http://camel.apache.org/schema/spring
+    http://camel.apache.org/schema/spring/camel-spring.xsd">
 
     <bean id="ToolBox" class="cl.ds.camel.commons.ToolBox"/>
 
     <camelContext id="camel-rest-soap" xmlns="http://camel.apache.org/schema/spring" useMDCLogging="true">
 
-
         <dataFormats>
-            <json id="getPalabraNumeroRequest" prettyPrint="true" library="Jackson" unmarshalTypeName="cl.ds.camel.domain.GetPalabraNumeroRequest" />
-            <json id="getPalabraNumeroResponse" prettyPrint="true" library="Jackson" unmarshalTypeName="cl.ds.camel.domain.GetPalabraNumeroResponse" />
+            <json id="GetCountryRequest" prettyPrint="true" library="Jackson" unmarshalTypeName="cl.ds.camel.domain.GetCountryRequest" />
+            <json id="GetCountryResponse" prettyPrint="true" library="Jackson" unmarshalTypeName="cl.ds.camel.domain.GetCountryResponse" />
+            <json id="GetChuckNorrisJokeResponse" prettyPrint="true" library="Jackson" unmarshalTypeName="cl.ds.camel.domain.GetChuckNorrisJokeResponse" />
         </dataFormats>
 
-
-        <!-- ################################################################################### -->
-
+        <!-- GLOBAL EXCEPTIONS -->
         <onException>
             <exception>java.lang.Exception</exception>
             <handled><constant>true</constant></handled>
@@ -34,8 +33,7 @@
             <setBody><simple>ParentRoute: [${routeId}] - ExceptionMessage: [${exception.message}]</simple></setBody>
         </onException>
 
-        <!-- ################################################################################### -->
-
+        <!-- REST CONFIGURATION -->
         <restConfiguration 
             bindingMode="auto"
             component="servlet" 
@@ -50,63 +48,87 @@
             <apiProperty key="cors" value="true" />
         </restConfiguration>
 
-        <!-- ################################################################################### -->
-
-        <rest path="/v1/traductor">
-            <post uri="/numeroAPalabras" produces="application/json" type="cl.ds.camel.domain.GetPalabraNumeroRequest" outType="cl.ds.camel.domain.GetPalabraNumeroResponse">
-                <to uri="direct:numeroAPalabras" />
+        <!-- PATHS -->
+        <rest path="/v1/">
+            <!-- SOAP -->
+            <post uri="/country/capital" produces="application/json" type="cl.ds.camel.domain.GetCountryRequest" outType="cl.ds.camel.domain.GetCountryResponse">
+                <to uri="direct:countryCapital" />
             </post>
+            <!-- 
+                REST
+                CATEGORYS ["animal", "career", "celebrity", "dev", "explicit", "fashion", "food", "history", "money", "movie", "music", "political", "religion", "science",
+                          "sport", "travel"]
+            -->
+            <get uri="/chuck-norris/joke?category={category}" produces="application/json" outType="cl.ds.camel.domain.GetCountryResponse">
+                <to uri="direct:chuckNorrisJokeByCategory" />
+            </get>
         </rest>
 
-        <!-- ################################### MAIN ######################################## -->
+        <!-- ROUTES -->
+        <route id="countryCapital" streamCache="true">
+            <from uri="direct:countryCapital" />
 
-        <route id="numeroAPalabras" streamCache="true">
-            <from uri="direct:numeroAPalabras" />
+            <log logName="cl.ds.camel.routes" loggingLevel="INFO" message="body: ${body}" />
 
-            <log logName="cl.ds.camel.routes" loggingLevel="INFO" message="Body: ${body}" />
-            <log logName="cl.ds.camel.routes" loggingLevel="INFO" message="Body: ${body.numero}" />
-            <log logName="cl.ds.camel.routes" loggingLevel="INFO" message="Inbound Headers: ${headers}" />
-
-            <setHeader name="numero">
-                <simple>${body.numero}</simple>
+            <setHeader name="countryIso">
+                <simple>${body.countryIso}</simple>
             </setHeader>
 
-            <!-- INICIO CHANCHULLO -->
             <setBody>
                 <simple>
-                    &lt;a&gt;${body.numero}&lt;/a&gt;
+                    &lt;a&gt;${body.countryIso}&lt;/a&gt;
                 </simple>
             </setBody>
-            <!-- FIN CHANCHULLO -->
 
-            <!-- Transformo Json a XML -->
+            <!-- TRANSFORM JSON TO XML -->
             <to uri="xslt://xsl/generateSoapRequest.xsl" />
 
-            <!-- Seteo cabecera del servicio SOAP -->
+            <!-- SET HEADERS SOAP -->
             <setHeader name="Content-Type">
                 <constant>text/xml; charset=utf-8</constant>
             </setHeader>
 
-            <!-- Llamada a servicio SOAP -->
-            <to uri="https4://www.dataaccess.com/webservicesserver/NumberConversion.wso?bridgeEndpoint=true" />
+            <!-- CALL SOAP SERVICE -->
+            <to uri="http4://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso?bridgeEndpoint=true"></to>
 
-            <!-- Transformo XML a Json -->
+            <!-- TRANSFORM XML TO JSON -->
             <to uri="xslt://xsl/generateJsonResponse.xsl" />
 
-            <log logName="cl.ds.camel.routes" loggingLevel="INFO" message="OutBound Body: ${body}" />
-            <log logName="cl.ds.camel.routes" loggingLevel="INFO" message="OutBound Headers: ${headers}" />
+            <log logName="cl.ds.camel.routes" loggingLevel="INFO" message="body: ${body}" />
+            <!-- <log logName="cl.ds.camel.routes" loggingLevel="INFO" message="headers: ${headers}" /> -->
 
+            <!-- REMOVE ALL HEADERS -->
             <removeHeaders pattern="*" />
 
-            <!-- Transformo de Texto a Objeto Java -->
+            <!-- TRANSFORM TEXT TO JAVA OBJECT -->
             <unmarshal>
-                <custom ref="getPalabraNumeroResponse" />
+                <custom ref="GetCountryResponse" />
             </unmarshal>
 
         </route>
 
+        <route id="chuckNorrisJokeByCategory" streamCache="true">
+            <from uri="direct:chuckNorrisJokeByCategory" />
 
-        <!--  -->
+            <!-- REMOVE ALL HEADERS, EXCEPT THE CATEGORY -->
+            <removeHeaders pattern="*" excludePattern="category" />
+
+            <!-- SET NEW HEADER OF CATEGORY -->
+            <setProperty name="category"><simple>${headers.category}</simple></setProperty>
+
+            <!-- SET HEADERS CAMEL -->
+            <setHeader name="CamelHttpMethod"><constant>GET</constant></setHeader>
+
+            <!-- CALL SERVICE -->
+            <toD uri="https4://api.chucknorris.io/jokes/random?category=${headers.category}&amp;bridgeEndpoint=true"></toD>
+
+            <!-- TRANSFORM TEXT TO JAVA OBJECT -->
+            <unmarshal>
+                <custom ref="GetChuckNorrisJokeResponse" />
+            </unmarshal>
+
+        </route>
 
     </camelContext>
+
 </beans>

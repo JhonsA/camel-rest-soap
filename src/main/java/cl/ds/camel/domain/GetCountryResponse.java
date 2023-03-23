@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Getter @Setter
-public class GetPalabraNumeroResponse {
-    
-    private String palabra;
+public class GetCountryResponse {
+    private String capital;
 }

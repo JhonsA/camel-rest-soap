@@ -4,7 +4,7 @@
     
     <xsl:template match="/">
         {          
-            "palabra":"<xsl:value-of select="normalize-space(//*[local-name()='NumberToWordsResult'])" />"
+            "capital":"<xsl:value-of select="normalize-space(//*[local-name()='CapitalCityResult'])" />"
         }
     </xsl:template>
 </xsl:stylesheet>
