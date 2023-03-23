@@ -1,0 +1,12 @@
+{
+  "groups": [
+    {
+      "name": "spring.primarydatasource",
+      "type": "javax.sql.DataSource",
+      "sourceType": "cl.ds.camel.Application",
+      "sourceMethod": "primaryDataSource()"
+    }
+  ],
+  "properties": [],
+  "hints": []
+}

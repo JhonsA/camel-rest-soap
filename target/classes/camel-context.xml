@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+       http://camel.apache.org/schema/spring
+       http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <bean id="ToolBox" class="cl.ds.camel.commons.ToolBox"/>
+
+    <camelContext id="camel-rest-soap" xmlns="http://camel.apache.org/schema/spring" useMDCLogging="true">
+
+
+        <dataFormats>
+            <json id="getPalabraNumeroRequest" prettyPrint="true" library="Jackson" unmarshalTypeName="cl.ds.camel.domain.GetPalabraNumeroRequest" />
+            <json id="getPalabraNumeroResponse" prettyPrint="true" library="Jackson" unmarshalTypeName="cl.ds.camel.domain.GetPalabraNumeroResponse" />
+        </dataFormats>
+
+
+        <!-- ################################################################################### -->
+
+        <onException>
+            <exception>java.lang.Exception</exception>
+            <handled><constant>true</constant></handled>
+            <log loggingLevel="ERROR" message="Exception: ${exception}" />
+            <log loggingLevel="ERROR" message="Body: ${body}" />
+            <log loggingLevel="ERROR" message="Headers: ${in.headers}"/>
+            <removeHeaders pattern="*" excludePattern="CamelHttpResponseCode" />
+            <choice>
+                <when>
+                    <simple>${in.headers.CamelHttpResponseCode} == ${null} || ${in.headers.CamelHttpResponseCode} == 200 || ${in.headers.CamelHttpResponseCode} == 201</simple>
+                    <setHeader name="CamelHttpResponseCode"><constant>500</constant></setHeader>
+                </when>
+            </choice>
+            <setBody><simple>ParentRoute: [${routeId}] - ExceptionMessage: [${exception.message}]</simple></setBody>
+        </onException>
+
+        <!-- ################################################################################### -->
+
+        <restConfiguration 
+            bindingMode="auto"
+            component="servlet" 
+            port="{{server.port}}">
+            
+            <dataFormatProperty key="prettyPrint" value="true" />
+            <apiProperty key="base.path" value="api" />
+            <apiProperty key="api.version" value="1.0.0" />
+            <apiProperty key="api.title" value="Servicio para integrar servicio SOAP" />
+            <apiProperty key="api.description" value="Servicio para integrar servicio SOAP" />
+            <apiProperty key="api.contact.name" value="Leonardo Pulento Meza (leonardo.meza@deepsource.cl)" />
+            <apiProperty key="cors" value="true" />
+        </restConfiguration>
+
+        <!-- ################################################################################### -->
+
+        <rest path="/v1/traductor">
+            <post uri="/numeroAPalabras" produces="application/json" type="cl.ds.camel.domain.GetPalabraNumeroRequest" outType="cl.ds.camel.domain.GetPalabraNumeroResponse">
+                <to uri="direct:numeroAPalabras" />
+            </post>
+        </rest>
+
+        <!-- ################################### MAIN ######################################## -->
+
+        <route id="numeroAPalabras" streamCache="true">
+            <from uri="direct:numeroAPalabras" />
+
+            <log logName="cl.ds.camel.routes" loggingLevel="INFO" message="Body: ${body}" />
+            <log logName="cl.ds.camel.routes" loggingLevel="INFO" message="Body: ${body.numero}" />
+            <log logName="cl.ds.camel.routes" loggingLevel="INFO" message="Inbound Headers: ${headers}" />
+
+            <setHeader name="numero">
+                <simple>${body.numero}</simple>
+            </setHeader>
+
+            <!-- INICIO CHANCHULLO -->
+            <setBody>
+                <simple>
+                    &lt;a&gt;${body.numero}&lt;/a&gt;
+                </simple>
+            </setBody>
+            <!-- FIN CHANCHULLO -->
+
+            <!-- Transformo Json a XML -->
+            <to uri="xslt://xsl/generateSoapRequest.xsl" />
+
+            <!-- Seteo cabecera del servicio SOAP -->
+            <setHeader name="Content-Type">
+                <constant>text/xml; charset=utf-8</constant>
+            </setHeader>
+
+            <!-- Llamada a servicio SOAP -->
+            <to uri="https4://www.dataaccess.com/webservicesserver/NumberConversion.wso?bridgeEndpoint=true" />
+
+            <!-- Transformo XML a Json -->
+            <to uri="xslt://xsl/generateJsonResponse.xsl" />
+
+            <log logName="cl.ds.camel.routes" loggingLevel="INFO" message="OutBound Body: ${body}" />
+            <log logName="cl.ds.camel.routes" loggingLevel="INFO" message="OutBound Headers: ${headers}" />
+
+            <removeHeaders pattern="*" />
+
+            <!-- Transformo de Texto a Objeto Java -->
+            <unmarshal>
+                <custom ref="getPalabraNumeroResponse" />
+            </unmarshal>
+
+        </route>
+
+
+        <!--  -->
+
+    </camelContext>
+</beans>
