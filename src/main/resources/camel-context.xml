@@ -54,7 +54,7 @@
             <post uri="/country/capital" produces="application/json" type="cl.ds.camel.domain.GetCountryRequest" outType="cl.ds.camel.domain.GetCountryResponse">
                 <to uri="direct:countryCapital" />
             </post>
-            <!-- 
+            <!--
                 REST
                 CATEGORYS ["animal", "career", "celebrity", "dev", "explicit", "fashion", "food", "history", "money", "movie", "music", "political", "religion", "science",
                           "sport", "travel"]
