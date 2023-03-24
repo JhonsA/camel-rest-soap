@@ -113,11 +113,15 @@
             <!-- REMOVE ALL HEADERS, EXCEPT THE CATEGORY -->
             <removeHeaders pattern="*" excludePattern="category" />
 
-            <!-- SET NEW HEADER OF CATEGORY -->
-            <setProperty name="category"><simple>${headers.category}</simple></setProperty>
+            <!-- SET PROPERTY OF CATEGORY -->
+            <setProperty name="category">
+                <simple>${headers.category}</simple>
+            </setProperty>
 
             <!-- SET HEADERS CAMEL -->
-            <setHeader name="CamelHttpMethod"><constant>GET</constant></setHeader>
+            <setHeader name="CamelHttpMethod">
+                <constant>GET</constant>
+            </setHeader>
 
             <!-- CALL SERVICE -->
             <toD uri="https4://api.chucknorris.io/jokes/random?category=${headers.category}&amp;bridgeEndpoint=true"></toD>
